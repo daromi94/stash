@@ -1,0 +1,18 @@
+# Gradle
+
+## Build
+build
+.gradle
+
+# Editors
+
+## IntelliJ IDEA
+.idea
+
+## Visual Studio Code
+.vscode
+
+# OS
+
+## macOS
+.DS_Store
