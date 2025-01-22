@@ -14,7 +14,7 @@ public final class LruCache<K, V> implements Cache<K, V> {
 
   private final ConcurrentLinkedDeque<K> priority;
 
-  private LruCache(final int maximumSize) {
+  public LruCache(final int maximumSize) {
     if (maximumSize <= 0) {
       throw new IllegalArgumentException("maximum size must be positive");
     }
@@ -72,13 +72,18 @@ public final class LruCache<K, V> implements Cache<K, V> {
     Objects.requireNonNull(key, "key must not be null");
     Objects.requireNonNull(value, "value must not be null");
 
-    if (store.size() == maximumSize) {
-      priority.removeFirst();
+    synchronized (this) {
+      if (store.size() == maximumSize) {
+        final var first = priority.removeFirst();
+        store.remove(first);
+      }
+
+      updatePriority(key);
+
+      store.put(key, value);
     }
 
-    updatePriority(key);
-
-    store.put(key, value);
+    assert store.size() <= maximumSize : "cache size exceeded maximum";
   }
 
   @Override
@@ -89,12 +94,18 @@ public final class LruCache<K, V> implements Cache<K, V> {
       return;
     }
 
-    store.remove(key);
-    priority.remove(key);
+    synchronized (this) {
+      store.remove(key);
+      priority.remove(key);
+    }
   }
 
   private void updatePriority(final K key) {
-    priority.remove(key);
-    priority.add(key);
+    synchronized (this) {
+      priority.remove(key);
+      priority.add(key);
+    }
+
+    assert priority.size() <= maximumSize : "cache size exceeded maximum";
   }
 }
