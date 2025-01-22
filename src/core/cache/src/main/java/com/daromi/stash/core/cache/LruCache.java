@@ -3,45 +3,80 @@ package com.daromi.stash.core.cache;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Supplier;
 
 public final class LruCache<K, V> implements Cache<K, V> {
 
-  private final ConcurrentMap<K, V> store;
+  private final int maximumSize;
 
-  private LruCache() {
+  private final ConcurrentHashMap<K, V> store;
+
+  private final ConcurrentLinkedDeque<K> priority;
+
+  private LruCache(final int maximumSize) {
+    if (maximumSize <= 0) {
+      throw new IllegalArgumentException("maximum size must be positive");
+    }
+
+    this.maximumSize = maximumSize;
+
     this.store = new ConcurrentHashMap<>();
+    this.priority = new ConcurrentLinkedDeque<>();
   }
 
   @Override
   public Optional<V> get(final K key) {
     Objects.requireNonNull(key, "key must not be null");
 
+    if (!store.containsKey(key)) {
+      return Optional.empty();
+    }
+
+    updatePriority(key);
+
     final var value = store.get(key);
 
-    return Optional.ofNullable(value);
+    return Optional.of(value);
   }
 
   @Override
   public V getIfPresent(final K key) {
     Objects.requireNonNull(key, "key must not be null");
 
+    if (!store.containsKey(key)) {
+      return null;
+    }
+
+    updatePriority(key);
+
     return store.get(key);
   }
 
   @Override
-  public V getOrElse(final K key, final Supplier<? extends V> supplier) {
+  public V getOrElse(final K key, final Supplier<V> supplier) {
     Objects.requireNonNull(key, "key must not be null");
     Objects.requireNonNull(supplier, "supplier must not be null");
 
-    return store.containsKey(key) ? store.get(key) : supplier.get();
+    if (!store.containsKey(key)) {
+      return supplier.get();
+    }
+
+    updatePriority(key);
+
+    return store.get(key);
   }
 
   @Override
   public void put(final K key, final V value) {
     Objects.requireNonNull(key, "key must not be null");
     Objects.requireNonNull(value, "value must not be null");
+
+    if (store.size() == maximumSize) {
+      priority.removeFirst();
+    }
+
+    updatePriority(key);
 
     store.put(key, value);
   }
@@ -50,6 +85,16 @@ public final class LruCache<K, V> implements Cache<K, V> {
   public void invalidate(final K key) {
     Objects.requireNonNull(key, "key must not be null");
 
+    if (!store.containsKey(key)) {
+      return;
+    }
+
     store.remove(key);
+    priority.remove(key);
+  }
+
+  private void updatePriority(final K key) {
+    priority.remove(key);
+    priority.add(key);
   }
 }

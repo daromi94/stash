@@ -9,7 +9,7 @@ public interface Cache<K, V> {
 
   V getIfPresent(final K key);
 
-  V getOrElse(final K key, final Supplier<? extends V> supplier);
+  V getOrElse(final K key, final Supplier<V> supplier);
 
   void put(final K key, final V value);
 
