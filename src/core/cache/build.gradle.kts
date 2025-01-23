@@ -6,4 +6,6 @@ version = "0.1.0-SNAPSHOT"
 
 repositories { mavenCentral() }
 
-dependencies {}
+dependencies {
+    api("org.jspecify:jspecify:1.0.0")
+}

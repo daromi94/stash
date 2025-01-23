@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 
 public final class LruCache<K, V> implements Cache<K, V> {
 
@@ -14,15 +15,21 @@ public final class LruCache<K, V> implements Cache<K, V> {
 
   private final ConcurrentLinkedDeque<K> priority;
 
-  public LruCache(final int maximumSize) {
+  @Nullable private final EvictionListener<K, V> listener;
+
+  public LruCache(final int maximumSize, @Nullable final EvictionListener<K, V> listener) {
     if (maximumSize <= 0) {
       throw new IllegalArgumentException("maximum size must be positive");
     }
 
     this.maximumSize = maximumSize;
-
+    this.listener = listener;
     this.store = new ConcurrentHashMap<>();
     this.priority = new ConcurrentLinkedDeque<>();
+  }
+
+  public LruCache(final int maximumSize) {
+    this(maximumSize, null);
   }
 
   @Override
@@ -74,8 +81,7 @@ public final class LruCache<K, V> implements Cache<K, V> {
 
     synchronized (this) {
       if (store.size() == maximumSize) {
-        final var first = priority.removeFirst();
-        store.remove(first);
+        evict();
       }
 
       updatePriority(key);
@@ -107,5 +113,19 @@ public final class LruCache<K, V> implements Cache<K, V> {
     }
 
     assert priority.size() <= maximumSize : "cache size exceeded maximum";
+  }
+
+  private void evict() {
+    K key;
+    V value;
+
+    synchronized (this) {
+      key = priority.removeFirst();
+      value = store.remove(key);
+    }
+
+    if (listener != null) {
+      listener.evicted(key, value);
+    }
   }
 }
