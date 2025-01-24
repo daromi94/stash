@@ -3,7 +3,7 @@ package com.daromi.stash.core.cache;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
@@ -13,7 +13,7 @@ public final class LruCache<K, V> implements Cache<K, V> {
 
   private final ConcurrentHashMap<K, V> store;
 
-  private final ConcurrentLinkedDeque<K> priority;
+  private final ConcurrentLinkedQueue<K> priority;
 
   @Nullable private final EvictionListener<K, V> listener;
 
@@ -25,7 +25,7 @@ public final class LruCache<K, V> implements Cache<K, V> {
     this.maximumSize = maximumSize;
     this.listener = listener;
     this.store = new ConcurrentHashMap<>();
-    this.priority = new ConcurrentLinkedDeque<>();
+    this.priority = new ConcurrentLinkedQueue<>();
   }
 
   public LruCache(final int maximumSize) {
@@ -120,7 +120,7 @@ public final class LruCache<K, V> implements Cache<K, V> {
     V value;
 
     synchronized (this) {
-      key = priority.removeFirst();
+      key = priority.remove();
       value = store.remove(key);
     }
 
