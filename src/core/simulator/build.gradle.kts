@@ -8,6 +8,4 @@ repositories { mavenCentral() }
 
 dependencies {}
 
-application {
-    mainClass = "$group.Main"
-}
+application { mainClass = "$group.Main" }
