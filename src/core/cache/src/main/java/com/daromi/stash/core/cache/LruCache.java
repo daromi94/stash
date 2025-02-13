@@ -9,7 +9,7 @@ import org.jspecify.annotations.Nullable;
 
 public final class LruCache<K, V> implements Cache<K, V> {
 
-  private final int maximumSize;
+  private final int capacity;
 
   private final ConcurrentHashMap<K, V> store;
 
@@ -17,19 +17,19 @@ public final class LruCache<K, V> implements Cache<K, V> {
 
   @Nullable private final EvictionListener<K, V> listener;
 
-  public LruCache(final int maximumSize, @Nullable final EvictionListener<K, V> listener) {
-    if (maximumSize <= 0) {
-      throw new IllegalArgumentException("maximum size must be positive");
+  public LruCache(final int capacity, @Nullable final EvictionListener<K, V> listener) {
+    if (capacity <= 0) {
+      throw new IllegalArgumentException("capacity must be positive");
     }
 
-    this.maximumSize = maximumSize;
+    this.capacity = capacity;
     this.listener = listener;
     this.store = new ConcurrentHashMap<>();
     this.priority = new ConcurrentLinkedQueue<>();
   }
 
-  public LruCache(final int maximumSize) {
-    this(maximumSize, null);
+  public LruCache(final int capacity) {
+    this(capacity, null);
   }
 
   @Override
@@ -80,7 +80,7 @@ public final class LruCache<K, V> implements Cache<K, V> {
     Objects.requireNonNull(value, "value must not be null");
 
     synchronized (this) {
-      if (store.size() == maximumSize) {
+      if (store.size() == capacity) {
         evict();
       }
 
@@ -89,7 +89,7 @@ public final class LruCache<K, V> implements Cache<K, V> {
       store.put(key, value);
     }
 
-    assert store.size() <= maximumSize : "cache size exceeded maximum";
+    assert store.size() <= capacity : "cache size exceeded capacity";
   }
 
   @Override
@@ -112,7 +112,7 @@ public final class LruCache<K, V> implements Cache<K, V> {
       priority.add(key);
     }
 
-    assert priority.size() <= maximumSize : "cache size exceeded maximum";
+    assert priority.size() <= capacity : "cache size exceeded capacity";
   }
 
   private void evict() {
