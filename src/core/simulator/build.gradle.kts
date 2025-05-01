@@ -1,8 +1,6 @@
 plugins { application }
 
-group = "com.daromi.stash.core.simulator"
-
-version = "0.1.0-SNAPSHOT"
+group = "com.daromi.stash.core"
 
 repositories { mavenCentral() }
 
