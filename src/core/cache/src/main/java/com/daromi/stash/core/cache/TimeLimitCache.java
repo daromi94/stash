@@ -5,13 +5,9 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-public final class TimeLimitCache<K, V> implements Cache<K, V> {
+final class TimeLimitCache<K, V> implements Cache<K, V> {
 
-  private final ConcurrentHashMap<K, V> store;
-
-  public TimeLimitCache() {
-    this.store = new ConcurrentHashMap<>();
-  }
+  private final ConcurrentHashMap<K, V> store = new ConcurrentHashMap<>();
 
   @Override
   public Optional<V> get(final K key) {

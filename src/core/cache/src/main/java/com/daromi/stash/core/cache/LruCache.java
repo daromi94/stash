@@ -7,28 +7,28 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
-public final class LruCache<K, V> implements Cache<K, V> {
+final class LruCache<K, V> implements Cache<K, V> {
 
   private final int capacity;
 
-  private final ConcurrentHashMap<K, V> store;
+  private final ConcurrentHashMap<K, V> store = new ConcurrentHashMap<>();
 
-  private final ConcurrentLinkedQueue<K> priority;
+  private final ConcurrentLinkedQueue<K> priority = new ConcurrentLinkedQueue<>();
+
+  private final Object lock = new Object();
 
   @Nullable private final EvictionListener<K, V> listener;
 
-  public LruCache(final int capacity, @Nullable final EvictionListener<K, V> listener) {
+  LruCache(final int capacity, @Nullable final EvictionListener<K, V> listener) {
     if (capacity <= 0) {
       throw new IllegalArgumentException("capacity must be positive");
     }
 
     this.capacity = capacity;
     this.listener = listener;
-    this.store = new ConcurrentHashMap<>();
-    this.priority = new ConcurrentLinkedQueue<>();
   }
 
-  public LruCache(final int capacity) {
+  LruCache(final int capacity) {
     this(capacity, null);
   }
 
@@ -79,7 +79,7 @@ public final class LruCache<K, V> implements Cache<K, V> {
     Objects.requireNonNull(key, "key must not be null");
     Objects.requireNonNull(value, "value must not be null");
 
-    synchronized (this) {
+    synchronized (lock) {
       if (store.size() == capacity) {
         evict();
       }
@@ -100,14 +100,14 @@ public final class LruCache<K, V> implements Cache<K, V> {
       return;
     }
 
-    synchronized (this) {
+    synchronized (lock) {
       store.remove(key);
       priority.remove(key);
     }
   }
 
   private void updatePriority(final K key) {
-    synchronized (this) {
+    synchronized (lock) {
       priority.remove(key);
       priority.add(key);
     }
@@ -119,7 +119,7 @@ public final class LruCache<K, V> implements Cache<K, V> {
     K key;
     V value;
 
-    synchronized (this) {
+    synchronized (lock) {
       key = priority.remove();
       value = store.remove(key);
     }
